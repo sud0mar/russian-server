@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<title>Админ-панель</title>
+<link rel="stylesheet" href="/style.css" />
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Inter', system-ui, sans-serif;
+    background: linear-gradient(135deg, #1a0f08 0%, #2d1810 50%, #1a0f08 100%);
+    color: #fff5e6; min-height: 100vh; padding: 40px 20px;
+  }
+
+  .admin-container { max-width: 900px; margin: 0 auto; }
+
+  h1 {
+    font-size: 32px; font-weight: 800;
+    background: linear-gradient(135deg, #ff8c42, #e8762c, #d4a017);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    margin-bottom: 8px;
+  }
+  .subtitle { color: #b89578; margin-bottom: 32px; font-size: 14px; }
+
+  .card {
+    background: rgba(45, 24, 16, 0.85);
+    backdrop-filter: blur(24px);
+    border: 1px solid rgba(232, 118, 44, 0.25);
+    border-radius: 16px;
+    padding: 28px;
+    margin-bottom: 24px;
+    box-shadow: 0 15px 40px rgba(0, 0, 0, 0.5);
+  }
+  .card h2 {
+    font-size: 18px; color: #ff8c42; margin-bottom: 16px;
+    display: flex; align-items: center; gap: 8px;
+  }
+
+  /* ── Форма создания ── */
+  .form-row {
+    display: grid; grid-template-columns: 1fr 1fr 180px auto;
+    gap: 12px; align-items: end;
+  }
+  @media (max-width: 700px) {
+    .form-row { grid-template-columns: 1fr; }
+  }
+  .form-group { display: flex; flex-direction: column; gap: 6px; }
+  .form-group label {
+    font-size: 12px; color: #b89578;
+    text-transform: uppercase; letter-spacing: 0.5px;
+    font-weight: 600;
+  }
+  .form-group input, .form-group select {
+    padding: 12px 14px;
+    background: rgba(26, 15, 8, 0.6);
+    border: 1px solid rgba(232, 118, 44, 0.2);
+    border-radius: 10px;
+    font-family: inherit; font-size: 14px;
+    color: #fff5e6; outline: none;
+  }
+  .form-group input:focus, .form-group select:focus {
+    border-color: #ff8c42; background: rgba(26, 15, 8, 0.9);
+  }
+
+  .btn-primary {
+    padding: 12px 24px;
+    background: linear-gradient(135deg, #ff8c42, #e8762c);
+    border: none; border-radius: 10px;
+    color: white; font-weight: 700; font-size: 14px;
+    cursor: pointer; font-family: inherit;
+    box-shadow: 0 8px 20px rgba(232, 118, 44, 0.4);
+    transition: all 0.2s;
+  }
+  .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 12px 28px rgba(232, 118, 44, 0.55); }
+  .btn-primary:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+
+  /* ── Список ── */
+  .user-list { display: flex; flex-direction: column; gap: 10px; }
+  .user-row {
+    display: flex; align-items: center; gap: 12px;
+    background: rgba(26, 15, 8, 0.6);
+    padding: 14px 18px; border-radius: 10px;
+    border: 1px solid rgba(232, 118, 44, 0.15);
+  }
+  .user-avatar {
+    width: 40px; height: 40px; border-radius: 50%;
+    background: linear-gradient(135deg, #ff8c42, #d4a017);
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700; font-size: 16px; color: #1a0f08;
+    flex-shrink: 0;
+  }
+  .user-info { flex: 1; }
+  .user-name { font-weight: 600; color: #fff5e6; font-size: 15px; }
+  .user-date { font-size: 12px; color: #b89578; margin-top: 2px; }
+
+  .role-tag {
+    padding: 4px 12px; border-radius: 20px;
+    font-size: 11px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .role-admin  { background: rgba(232, 118, 44, 0.25); color: #ff8c42; }
+  .role-editor { background: rgba(212, 160, 23, 0.25); color: #d4a017; }
+  .role-viewer { background: rgba(184, 149, 120, 0.25); color: #b89578; }
+
+  .btn-delete {
+    padding: 8px 14px;
+    background: rgba(255, 87, 87, 0.15);
+    border: 1px solid rgba(255, 87, 87, 0.4);
+    color: #ff5757; border-radius: 8px;
+    font-family: inherit; font-size: 12px;
+    font-weight: 600; cursor: pointer; transition: all 0.2s;
+  }
+  .btn-delete:hover { background: rgba(255, 87, 87, 0.3); }
+  .btn-delete:disabled { opacity: 0.3; cursor: not-allowed; }
+
+  .status {
+    margin-top: 16px; padding: 12px;
+    border-radius: 8px; font-size: 14px; text-align: center;
+    display: none;
+  }
+  .status.success { background: rgba(76, 175, 80, 0.15); color: #4caf50; border: 1px solid rgba(76, 175, 80, 0.3); display: block; }
+  .status.error   { background: rgba(255, 87, 87, 0.15); color: #ff5757; border: 1px solid rgba(255, 87, 87, 0.3); display: block; }
+
+  .back-btn {
+    display: inline-block; margin-bottom: 20px;
+    padding: 10px 20px;
+    background: rgba(232, 118, 44, 0.15);
+    border: 1px solid rgba(232, 118, 44, 0.4);
+    color: #ff8c42; border-radius: 10px;
+    font-weight: 600; text-decoration: none;
+    font-size: 13px; transition: all 0.2s;
+  }
+  .back-btn:hover { background: rgba(232, 118, 44, 0.3); transform: translateX(-4px); }
+
+  .empty { text-align: center; color: #b89578; padding: 20px; font-style: italic; }
+</style>
+</head>
+<body>
+
+<div class="admin-container">
+  <a href="/index.html" class="back-btn">← На главную</a>
+  <h1>👑 Админ-панель</h1>
+  <p class="subtitle">Управление пользователями сайта</p>
+
+  <!-- Создание пользователя -->
+  <div class="card">
+    <h2>➕ Создать нового пользователя</h2>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Логин</label>
+        <input type="text" id="newUsername" placeholder="ivan" autocomplete="off">
+      </div>
+      <div class="form-group">
+        <label>Пароль</label>
+        <input type="text" id="newPassword" placeholder="qwerty123" autocomplete="off">
+      </div>
+      <div class="form-group">
+        <label>Роль</label>
+        <select id="newRole">
+          <option value="editor">✏️ Редактор</option>
+          <option value="viewer">👁 Гость</option>
+          <option value="admin">👑 Админ</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>&nbsp;</label>
+        <button class="btn-primary" id="createBtn">Создать</button>
+      </div>
+    </div>
+    <div class="status" id="createStatus"></div>
+  </div>
+
+  <!-- Список пользователей -->
+  <div class="card">
+    <h2>👥 Все пользователи</h2>
+    <div class="user-list" id="userList">
+      <p class="empty">Загрузка...</p>
+    </div>
+  </div>
+</div>
+
+<script>
+// ─── Проверка авторизации ───
+const token = localStorage.getItem('token');
+const user = JSON.parse(localStorage.getItem('user') || 'null');
+
+if (!token || !user || user.role !== 'admin') {
+  alert('Доступ только для администратора');
+  window.location.href = '/index.html';
+}
+
+// ─── Загрузка списка ───
+async function loadUsers() {
+  const list = document.getElementById('userList');
+  try {
+    const res = await fetch('/api/users', {
+      headers: { 'Authorization': 'Bearer ' + token }
+    });
+    if (!res.ok) throw new Error('Ошибка загрузки');
+    const users = await res.json();
+
+    if (!users.length) {
+      list.innerHTML = '<p class="empty">Пока никого нет</p>';
+      return;
+    }
+
+    list.innerHTML = '';
+    users.forEach(u => {
+      const row = document.createElement('div');
+      row.className = 'user-row';
+
+      const initial = u.username.charAt(0).toUpperCase();
+      const date = u.created_at ? new Date(u.created_at).toLocaleDateString('ru-RU') : '';
+      const isMe = user && u.id === user.id;
+
+      row.innerHTML = `
+        <div class="user-avatar">${initial}</div>
+        <div class="user-info">
+          <div class="user-name">${u.username}${isMe ? ' (вы)' : ''}</div>
+          <div class="user-date">Создан: ${date}</div>
+        </div>
+        <span class="role-tag role-${u.role}">${u.role}</span>
+      `;
+
+      const del = document.createElement('button');
+      del.className = 'btn-delete';
+      del.textContent = 'Удалить';
+      del.disabled = isMe;
+      del.onclick = () => deleteUser(u.id, u.username);
+      row.appendChild(del);
+
+      list.appendChild(row);
+    });
+  } catch (e) {
+    list.innerHTML = `<p class="empty">Ошибка: ${e.message}</p>`;
+  }
+}
+
+// ─── Создание пользователя ───
+document.getElementById('createBtn').onclick = async () => {
+  const username = document.getElementById('newUsername').value.trim();
+  const password = document.getElementById('newPassword').value;
+  const role = document.getElementById('newRole').value;
+  const status = document.getElementById('createStatus');
+
+  if (!username || !password) {
+    status.className = 'status error';
+    status.textContent = 'Заполни логин и пароль';
+    return;
+  }
+  if (password.length < 4) {
+    status.className = 'status error';
+    status.textContent = 'Пароль должен быть минимум 4 символа';
+    return;
+  }
+
+  const btn = document.getElementById('createBtn');
+  btn.disabled = true;
+  btn.textContent = 'Создание...';
+
+  try {
+    const res = await fetch('/api/users', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + token
+      },
+      body: JSON.stringify({ username, password, role })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Ошибка');
+
+    status.className = 'status success';
+    status.textContent = `✓ Пользователь «${username}» создан с ролью ${role}`;
+
+    document.getElementById('newUsername').value = '';
+    document.getElementById('newPassword').value = '';
+    loadUsers();
+  } catch (e) {
+    status.className = 'status error';
+    status.textContent = '✗ ' + e.message;
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Создать';
+  }
+};
+
+// ─── Удаление пользователя ───
+async function deleteUser(id, username) {
+  if (!confirm(`Удалить пользователя «${username}»?`)) return;
+  try {
+    const res = await fetch('/api/users/' + id, {
+      method: 'DELETE',
+      headers: { 'Authorization': 'Bearer ' + token }
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Ошибка');
+    loadUsers();
+  } catch (e) {
+    alert('Ошибка: ' + e.message);
+  }
+}
+
+// ─── Старт ───
+loadUsers();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Вход — Russian Server</title>
+  <link rel="stylesheet" href="/style.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body class="login-page">
+  <div class="login-container">
+    <div class="login-card">
+
+      <!-- Логотип -->
+      <div class="login-logo">
+        <svg width="72" height="72" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+          <path d="M2 17L12 22L22 17" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+          <path d="M2 12L12 17L22 12" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+        </svg>
+      </div>
+
+      <h1 class="login-title">Добро пожаловать</h1>
+      <p class="login-subtitle">Войдите, чтобы продолжить работу</p>
+
+      <!-- Форма -->
+      <form id="loginForm" class="login-form">
+        <div class="input-group">
+          <label for="username">Логин</label>
+          <input type="text" id="username" name="username" placeholder="Введите логин" required autocomplete="username">
+        </div>
+
+        <div class="input-group">
+          <label for="password">Пароль</label>
+          <input type="password" id="password" name="password" placeholder="Введите пароль" required autocomplete="current-password">
+        </div>
+
+        <div id="errorMessage" class="error-message"></div>
+
+        <button type="submit" class="login-btn" id="loginBtn">
+          <span class="btn-text">Войти</span>
+        </button>
+      </form>
+
+      <div class="divider"><span>или</span></div>
+
+      <button class="visitor-btn" id="visitorBtn">👤 Я посетитель</button>
+      <!-- Лиса-загрузка под кнопками -->
+      <div class="fox-loader" id="loaderOverlay">
+        <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+          <ellipse cx="100" cy="160" rx="50" ry="25" fill="#e8762c"/>
+          <path d="M 150 160 Q 180 140 175 110 Q 170 130 155 145 Z" fill="#e8762c" class="fox-tail"/>
+          <path d="M 175 110 Q 180 100 172 95 Q 168 105 170 112 Z" fill="#fff5e6"/>
+          <ellipse cx="100" cy="110" rx="45" ry="40" fill="#e8762c"/>
+          <path d="M 65 85 L 55 45 L 85 75 Z" fill="#e8762c"/>
+          <path d="M 68 82 L 62 55 L 80 74 Z" fill="#fff5e6"/>
+          <path d="M 135 85 L 145 45 L 115 75 Z" fill="#e8762c"/>
+          <path d="M 132 82 L 138 55 L 120 74 Z" fill="#fff5e6"/>
+          <ellipse cx="100" cy="125" rx="30" ry="22" fill="#fff5e6"/>
+          <ellipse cx="85" cy="105" rx="6" ry="7" fill="#1a1a1a" class="fox-eye"/>
+          <ellipse cx="115" cy="105" rx="6" ry="7" fill="#1a1a1a" class="fox-eye"/>
+          <circle cx="87" cy="103" r="2" fill="#fff"/>
+          <circle cx="117" cy="103" r="2" fill="#fff"/>
+          <ellipse cx="100" cy="128" rx="5" ry="4" fill="#1a1a1a"/>
+          <path d="M 100 132 Q 95 138 90 135" stroke="#1a1a1a" stroke-width="1.5" fill="none"/>
+          <path d="M 100 132 Q 105 138 110 135" stroke="#1a1a1a" stroke-width="1.5" fill="none"/>
+        </svg>
+        <p class="fox-text">Загрузка...</p>
+      </div>
+      <p class="login-footer">© 2026 Russian Server. Все права защищены.</p>
+    </div>
+
+    <div class="bg-shape bg-shape-1"></div>
+    <div class="bg-shape bg-shape-2"></div>
+    <div class="bg-shape bg-shape-3"></div>
+  </div>
+
+  <!-- Оверлей загрузки с лисой -->
+  
+
+  <script>
+    const form = document.getElementById('loginForm');
+    const errorEl = document.getElementById('errorMessage');
+    const btn = document.getElementById('loginBtn');
+    const btnText = btn.querySelector('.btn-text');
+    const visitorBtn = document.getElementById('visitorBtn');
+    const loaderOverlay = document.getElementById('loaderOverlay');
+
+    // ====== Вход ======
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      errorEl.textContent = '';
+      btnText.textContent = 'Вход...';
+      btn.disabled = true;
+      loaderOverlay.classList.add('active');
+
+      const username = document.getElementById('username').value.trim();
+      const password = document.getElementById('password').value;
+
+      try {
+        const res = await fetch('/api/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, password })
+        });
+
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Ошибка входа');
+
+        localStorage.setItem('token', data.token);
+        localStorage.setItem('user', JSON.stringify(data.user));
+        localStorage.removeItem('visitor');
+
+        setTimeout(() => {
+          window.location.href = '/index.html';
+        }, 800);
+
+      } catch (err) {
+        errorEl.textContent = err.message;
+        btnText.textContent = 'Войти';
+        btn.disabled = false;
+        loaderOverlay.classList.remove('active');
+      }
+    });
+
+    // ====== Я посетитель ======
+    visitorBtn.addEventListener('click', () => {
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      localStorage.setItem('visitor', 'true');
+
+      loaderOverlay.classList.add('active');
+      setTimeout(() => {
+        window.location.href = '/index.html';
+      }, 800);
+    });
+  </script>
+</body>
+</html>
