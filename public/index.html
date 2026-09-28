@@ -710,26 +710,51 @@ function getRegionName(props) {
 function styleRegion(feature) {
   const name = getRegionName(feature.properties);
   const isFound = foundRegions.has(name);
+  const isSelected = currentRegion === name && selectedLayer && selectedLayer.feature === feature;
+
   return {
-    fillColor:   isFound ? '#4caf50' : '#ffd8b0',
-    weight:      1,
-    opacity:     0.8,
-    color:       '#e8762c',
-    fillOpacity: isFound ? 0.6 : 0.35
+    fillColor:   isSelected ? '#ff8c42' : (isFound ? '#4caf50' : '#ffd8b0'),
+    weight:      isSelected ? 3 : 1,
+    opacity:     0.9,
+    color:       isSelected ? '#e8762c' : '#e8762c',
+    fillOpacity: isSelected ? 0.75 : (isFound ? 0.6 : 0.35)
   };
 }
 
 function highlightFeature(e) {
   const layer = e.target;
-  layer.setStyle({ weight: 2.5, color: '#e8762c', fillOpacity: 0.55 });
+
+  // Не перекрашиваем уже выбранный регион
+  if (selectedLayer === layer) return;
+
+  layer.setStyle({
+    weight: 2.5,
+    color: '#e8762c',
+    fillColor: '#ffe4cc',
+    fillOpacity: 0.6
+  });
   layer.bringToFront();
 }
 
 function resetHighlight(e) {
-  if (selectedLayer && selectedLayer !== e.target) {
+  const layer = e.target;
+
+  // Не сбрасываем стиль, если это выбранный регион
+  if (selectedLayer === layer) {
+    layer.setStyle({
+      weight: 3,
+      color: '#e8762c',
+      fillColor: '#ff8c42',
+      fillOpacity: 0.75
+    });
+    return;
+  }
+
+  // Восстанавливаем стиль остальных регионов
+  if (selectedLayer) {
     selectedLayer.setStyle(styleRegion(selectedLayer.feature));
   }
-  e.target.setStyle(styleRegion(e.target.feature));
+  layer.setStyle(styleRegion(layer.feature));
 }
 
 function selectRegion(e) {
@@ -738,6 +763,7 @@ function selectRegion(e) {
     selectedLayer.setStyle(styleRegion(selectedLayer.feature));
   }
   selectedLayer = layer;
+  map.fitBounds(layer.getBounds(), { padding: [40, 40], maxZoom: 8 }); layer.bringToFront();
   layer.setStyle({ weight: 3, color: '#e8762c', fillColor: '#ff8c42', fillOpacity: 0.6 });
 
   const name = getRegionName(layer.feature.properties) || 'Неизвестный регион';
