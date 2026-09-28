@@ -146,68 +146,82 @@
   }
 
   /* ── МОДАЛКА КВЕСТА ── */
-  #quest-modal {
-    position: fixed; inset: 0; background: rgba(0,0,0,0.75);
-    display: none; align-items: center; justify-content: center;
-    z-index: 9999; padding: 20px;
-  }
-  #quest-modal.open { display: flex; }
-  .quest-window {
-    background: #2d1810; border-radius: 16px; padding: 32px;
-    max-width: 680px; width: 100%; max-height: 90vh;
-    overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,0.5);
-    position: relative; border: 1px solid rgba(232, 118, 44, 0.3);
-  }
-  .quest-window h2 { font-size: 24px; margin-bottom: 12px; color: #ff8c42; }
-  .quest-window .riddle {
-    color: #b89578; font-size: 15px; line-height: 1.6;
-    margin-bottom: 20px; padding-bottom: 16px;
-    border-bottom: 1px solid rgba(232, 118, 44, 0.2);
-  }
-  .close-btn {
-    position: absolute; top: 16px; right: 16px;
-    background: none; border: none; font-size: 28px;
-    cursor: pointer; color: #b89578; line-height: 1;
-  }
-  .close-btn:hover { color: #ff8c42; }
-  .letters { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin: 24px 0; }
-  .letter-cell {
-    width: 52px; height: 60px; border: 2px dashed rgba(232, 118, 44, 0.4);
-    border-radius: 8px; display: flex; align-items: center;
-    justify-content: center; font-size: 28px; font-weight: bold;
-    color: #fff5e6; background: rgba(26, 15, 8, 0.6); transition: all 0.3s;
-  }
-  .letter-cell.filled {
-    border: 2px solid #4caf50; background: rgba(76, 175, 80, 0.15);
-    color: #4caf50; animation: pop 0.3s;
-  }
-  @keyframes pop { 0% { transform: scale(0.6); } 60% { transform: scale(1.15); } 100% { transform: scale(1); } }
-  .quest-regions { margin-top: 20px; }
-  .quest-regions h3 { font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px; color: #b89578; margin-bottom: 12px; }
-  .region-tag {
-    display: inline-block; padding: 8px 14px;
-    margin: 4px 6px 4px 0; background: rgba(26, 15, 8, 0.6);
-    border-radius: 20px; font-size: 14px; color: #fff5e6;
-    transition: all 0.2s; border: 1px solid rgba(232, 118, 44, 0.2);
-  }
-  .region-tag.found {
-    background: rgba(76, 175, 80, 0.2); color: #4caf50;
-    text-decoration: line-through; opacity: 0.7;
-    border-color: rgba(76, 175, 80, 0.4);
-  }
-  .success-message {
-    text-align: center; font-size: 22px; color: #4caf50;
-    margin-top: 20px; padding: 16px; background: rgba(76, 175, 80, 0.15);
-    border-radius: 12px; display: none;
-  }
-  .success-message.show { display: block; }
-  .restart-btn {
-    display: block; width: 100%; margin-top: 16px;
-    padding: 12px; border: 2px solid #e8a87c; border-radius: 10px;
-    background: transparent; color: #ff8c42; font-weight: 700;
-    font-size: 15px; cursor: pointer; font-family: inherit;
-  }
-  .restart-btn:hover { background: rgba(232, 118, 44, 0.15); }
+ /* ── КВЕСТ: карточка в правом нижнем углу ── */
+#quest-modal {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  width: 420px;
+  max-width: calc(100vw - 40px);
+  z-index: 9999;
+  display: none;
+  pointer-events: none;
+}
+#quest-modal.open { display: block; }
+
+.quest-window {
+  pointer-events: auto;
+  background: #2d1810;
+  border-radius: 16px;
+  padding: 24px;
+  max-height: 75vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+  position: relative;
+  border: 1px solid rgba(232, 118, 44, 0.4);
+}
+.quest-window h2 { font-size: 20px; margin-bottom: 10px; color: #ff8c42; }
+.quest-window .riddle {
+  color: #b89578; font-size: 14px; line-height: 1.5;
+  margin-bottom: 16px; padding-bottom: 12px;
+  border-bottom: 1px solid rgba(232, 118, 44, 0.2);
+}
+.close-btn {
+  position: absolute; top: 12px; right: 12px;
+  background: none; border: none; font-size: 24px;
+  cursor: pointer; color: #b89578; line-height: 1;
+}
+.close-btn:hover { color: #ff8c42; }
+
+.letters { display: flex; gap: 6px; justify-content: center; flex-wrap: wrap; margin: 16px 0; }
+.letter-cell {
+  width: 40px; height: 48px; border: 2px dashed rgba(232, 118, 44, 0.4);
+  border-radius: 8px; display: flex; align-items: center;
+  justify-content: center; font-size: 22px; font-weight: bold;
+  color: #fff5e6; background: rgba(26, 15, 8, 0.6); transition: all 0.3s;
+}
+.letter-cell.filled {
+  border: 2px solid #4caf50; background: rgba(76, 175, 80, 0.15);
+  color: #4caf50; animation: pop 0.3s;
+}
+@keyframes pop { 0% { transform: scale(0.6); } 60% { transform: scale(1.15); } 100% { transform: scale(1); } }
+
+.quest-regions { margin-top: 12px; }
+.quest-regions h3 { font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; color: #b89578; margin-bottom: 8px; }
+.region-tag {
+  display: inline-block; padding: 6px 10px;
+  margin: 3px 4px 3px 0; background: rgba(26, 15, 8, 0.6);
+  border-radius: 16px; font-size: 12px; color: #fff5e6;
+  transition: all 0.2s; border: 1px solid rgba(232, 118, 44, 0.2);
+}
+.region-tag.found {
+  background: rgba(76, 175, 80, 0.2); color: #4caf50;
+  text-decoration: line-through; opacity: 0.7;
+  border-color: rgba(76, 175, 80, 0.4);
+}
+.success-message {
+  text-align: center; font-size: 18px; color: #4caf50;
+  margin-top: 12px; padding: 12px; background: rgba(76, 175, 80, 0.15);
+  border-radius: 12px; display: none;
+}
+.success-message.show { display: block; }
+.restart-btn {
+  display: block; width: 100%; margin-top: 12px;
+  padding: 10px; border: 2px solid #e8a87c; border-radius: 10px;
+  background: transparent; color: #ff8c42; font-weight: 700;
+  font-size: 13px; cursor: pointer; font-family: inherit;
+}
+.restart-btn:hover { background: rgba(232, 118, 44, 0.15); }
 
   @media (max-width: 900px) {
     body { flex-direction: column; }
@@ -221,7 +235,18 @@
 </style>
 </head>
 <body>
+<body>
+  <!-- Экран загрузки, виден пока идёт проверка -->
+  <div id="authCheck" style="position:fixed;inset:0;background:#1a0f08;z-index:99999;display:flex;align-items:center;justify-content:center;color:#ff8c42;font-family:'Inter',sans-serif;">
+    <div style="text-align:center;">
+      <div style="font-size:40px;margin-bottom:12px;">🦊</div>
+      <div>Проверка доступа...</div>
+    </div>
+  </div>
 
+  <div id="map">...</div>
+  ...
+</body>
 <div id="map">
   <div id="search-box">
     <input type="text" id="search-input" placeholder="🔍 Найти регион..." autocomplete="off">
@@ -288,6 +313,16 @@
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
 <script>
+  const token = localStorage.getItem('token');
+const user = JSON.parse(localStorage.getItem('user') || 'null');
+const isVisitor = localStorage.getItem('visitor') === 'true';
+
+if (!token && !isVisitor) {
+  window.location.href = '/login.html';
+} else {
+  // Доступ есть — скрываем экран проверки
+  document.getElementById('authCheck').style.display = 'none';
+}
 // ════════════════════════════════════════════════════════════
 // ██  ШАГ 1. ВСТАВЬ СЮДА СВОЙ GEOJSON                    ██
 // ════════════════════════════════════════════════════════════
