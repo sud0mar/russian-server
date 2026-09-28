@@ -763,7 +763,8 @@ function selectRegion(e) {
     selectedLayer.setStyle(styleRegion(selectedLayer.feature));
   }
   selectedLayer = layer;
-  map.fitBounds(layer.getBounds(), { padding: [40, 40], maxZoom: 8 }); layer.bringToFront();
+  map.fitBounds(layer.getBounds(), { padding: [40, 40], maxZoom: 8 }); 
+  layer.bringToFront();
   layer.setStyle({ weight: 3, color: '#e8762c', fillColor: '#ff8c42', fillOpacity: 0.6 });
 
   const name = getRegionName(layer.feature.properties) || 'Неизвестный регион';
