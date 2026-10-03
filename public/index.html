@@ -27,16 +27,24 @@ body {
 
 /* ── ПАНЕЛЬ: 50% ── */
 #panel {
-  width: 50%;
-  min-width: 360px;
-  background: #2d1810;
-  padding: 24px;
+  width: 50%; min-width: 360px;
+  background: #2d1810; padding: 24px;
   box-shadow: -2px 0 12px rgba(0,0,0,0.4);
   overflow-y: auto;
-  display: flex;
-  flex-direction: column;
+  overflow-x: hidden;
+  height: 100vh;
+  max-height: 100vh;
+  display: flex; flex-direction: column;
   border-left: 1px solid rgba(232, 118, 44, 0.2);
 }
+
+#panel::-webkit-scrollbar { width: 10px; }
+#panel::-webkit-scrollbar-track { background: rgba(26, 15, 8, 0.5); }
+#panel::-webkit-scrollbar-thumb {
+  background: rgba(232, 118, 44, 0.4);
+  border-radius: 5px;
+}
+#panel::-webkit-scrollbar-thumb:hover { background: rgba(232, 118, 44, 0.7); }
 
 /* ── ПОИСК ── */
 #search-box {
@@ -469,6 +477,12 @@ body {
       <textarea id="phrases" placeholder="По одному выражению на строку..."></textarea>
     </div>
 
+
+    <div class="section">
+      <h3>🗺️ Диалектизмы</h3>
+      <textarea id="dialects" placeholder="Местные слова и выражения..."></textarea>
+    </div>
+
     <div class="section">
       <h3>🎬 Медиа и файлы</h3>
       <div class="media-list" id="mediaList">
@@ -779,14 +793,16 @@ function selectRegion(e) {
   document.getElementById('content').style.display = 'block';
 
   const saved = regionTexts[name] || {};
-  document.getElementById('history').value = saved.history || '';
-  document.getElementById('facts').value   = saved.facts   || '';
-  document.getElementById('phrases').value = saved.phrases || '';
+document.getElementById('history').value  = saved.history  || '';
+document.getElementById('facts').value    = saved.facts    || '';
+document.getElementById('phrases').value  = saved.phrases  || '';
+document.getElementById('dialects').value = saved.dialects || '';
 
-  const canEditRegion = canEdit && !isVisitor;
-  ['history', 'facts', 'phrases'].forEach(id => {
-    document.getElementById(id).disabled = !canEditRegion;
-  });
+const canEditRegion = canEdit && !isVisitor;
+['history', 'facts', 'phrases', 'dialects'].forEach(id => {
+  document.getElementById(id).disabled = !canEditRegion;
+});
+
   document.getElementById('uploadButtons').style.display = canEditRegion ? 'flex' : 'none';
 
   renderMedia(saved.media || []);
