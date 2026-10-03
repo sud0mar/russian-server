@@ -890,19 +890,37 @@ document.addEventListener('click', (e) => {
 /* ============================================================
    8. СОХРАНЕНИЕ ТЕКСТОВ
    ============================================================ */
-['history', 'facts', 'phrases'].forEach(id => {
+['history', 'facts', 'phrases', 'dialects'].forEach(id => {
   const el = document.getElementById(id);
   el.addEventListener('input', () => {
     if (!currentRegion) return;
     if (!regionTexts[currentRegion]) regionTexts[currentRegion] = {};
     regionTexts[currentRegion][id] = el.value;
+
     const status = document.getElementById('status');
     status.textContent = 'Сохранение...';
     clearTimeout(el._saveTimer);
-    el._saveTimer = setTimeout(() => {
-      status.textContent = '✅ Сохранено';
-      setTimeout(() => { if (status.textContent === '✅ Сохранено') status.textContent = ''; }, 1500);
-    }, 400);
+    el._saveTimer = setTimeout(async () => {
+      try {
+        const res = await fetch('/api/regions/' + encodeURIComponent(currentRegion), {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + token
+          },
+          body: JSON.stringify(regionTexts[currentRegion])
+        });
+        if (!res.ok) throw new Error('Ошибка сохранения');
+        status.textContent = '✅ Сохранено';
+      } catch (err) {
+        status.textContent = '❌ ' + err.message;
+      }
+      setTimeout(() => {
+        if (status.textContent.startsWith('✅') || status.textContent.startsWith('❌')) {
+          status.textContent = '';
+        }
+      }, 2000);
+    }, 800);
   });
 });
 
