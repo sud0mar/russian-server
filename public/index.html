@@ -494,9 +494,40 @@ body {
         <button data-type="image">🖼️ Загрузить картинку</button>
         <button data-type="text">📄 Загрузить текст</button>
       </div>
-      <input type="file" id="fileInput" class="upload-input">
+       <input type="file" id="fileInput" class="upload-input">
+
+<div id="uploadCaptionBlock" style="display:none; margin-top:12px;">
+  <input type="text" id="uploadCaption" placeholder="Подпись к файлу (необязательно)" style="
+    width: 100%; padding: 12px; border-radius: 10px;
+    background: rgba(26, 15, 8, 0.6); color: #fff5e6;
+    border: 1px solid rgba(232, 118, 44, 0.25);
+    font-family: inherit; font-size: 14px; outline: none;
+    margin-bottom: 8px;
+  ">
+  <button id="uploadConfirmBtn" style="
+    width: 100%; padding: 12px; border-radius: 10px;
+    background: #e8762c; color: #fff; border: none;
+    font-weight: 700; font-size: 14px; cursor: pointer;
+    font-family: inherit;
+  ">Загрузить файл</button>
+     </div>
     </div>
 
+    <div id="saveBlock" style="display:none; margin-top:16px;">
+  <button id="saveBtn" style="
+    width: 100%;
+    padding: 14px;
+    background: linear-gradient(135deg, #ff8c42, #e8762c);
+    border: none;
+    border-radius: 12px;
+    color: #fff;
+    font-weight: 700;
+    font-size: 15px;
+    cursor: pointer;
+    font-family: inherit;
+    box-shadow: 0 8px 20px rgba(232, 118, 44, 0.4);
+  ">💾 Сохранить</button>
+   </div>
     <div class="status" id="status"></div>
   </div>
 </div>
@@ -804,8 +835,9 @@ const canEditRegion = canEdit && !isVisitor;
 });
 
   document.getElementById('uploadButtons').style.display = canEditRegion ? 'flex' : 'none';
+  document.getElementById('saveBlock').style.display = canEditRegion ? 'block' : 'none';
 
-  renderMedia(saved.media || []);
+  loadRegionMedia(name);
 
   // Отметка буквы в квесте
   if (currentQuest) checkQuestLetter(name);
@@ -888,7 +920,7 @@ document.addEventListener('click', (e) => {
 });
 
 /* ============================================================
-   8. СОХРАНЕНИЕ ТЕКСТОВ
+   8. СОХРАНЕНИЕ ТЕКСТОВ — по кнопке
    ============================================================ */
 ['history', 'facts', 'phrases', 'dialects'].forEach(id => {
   const el = document.getElementById(id);
@@ -896,60 +928,176 @@ document.addEventListener('click', (e) => {
     if (!currentRegion) return;
     if (!regionTexts[currentRegion]) regionTexts[currentRegion] = {};
     regionTexts[currentRegion][id] = el.value;
-
-    const status = document.getElementById('status');
-    status.textContent = 'Сохранение...';
-    clearTimeout(el._saveTimer);
-    el._saveTimer = setTimeout(async () => {
-      try {
-        const res = await fetch('/api/regions/' + encodeURIComponent(currentRegion), {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': 'Bearer ' + token
-          },
-          body: JSON.stringify(regionTexts[currentRegion])
-        });
-        if (!res.ok) throw new Error('Ошибка сохранения');
-        status.textContent = '✅ Сохранено';
-      } catch (err) {
-        status.textContent = '❌ ' + err.message;
-      }
-      setTimeout(() => {
-        if (status.textContent.startsWith('✅') || status.textContent.startsWith('❌')) {
-          status.textContent = '';
-        }
-      }, 2000);
-    }, 800);
   });
 });
 
+document.getElementById('saveBtn').addEventListener('click', async () => {
+  if (!currentRegion) return alert('Выбери регион');
+
+  const status = document.getElementById('status');
+  const btn = document.getElementById('saveBtn');
+  btn.disabled = true;
+  btn.textContent = '⏳ Сохранение...';
+  status.textContent = '';
+
+  try {
+    const res = await fetch('/api/regions/' + encodeURIComponent(currentRegion), {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + token
+      },
+      body: JSON.stringify(regionTexts[currentRegion] || {})
+    });
+    if (!res.ok) throw new Error('Ошибка ' + res.status);
+    status.textContent = '✅ Сохранено';
+  } catch (err) {
+    status.textContent = '❌ ' + err.message;
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '💾 Сохранить';
+    setTimeout(() => { status.textContent = ''; }, 2500);
+  }
+});
+
 /* ============================================================
-   9. МЕДИА
+   9. МЕДИА — правильная загрузка + показ + подписи
    ============================================================ */
-function renderMedia(media) {
+
+// Показ медиа
+function renderMedia(items) {
   const list = document.getElementById('mediaList');
-  if (!media.length) {
+  if (!items || !items.length) {
     list.innerHTML = '<p class="hint">Пока нет файлов</p>';
     return;
   }
-  list.innerHTML = media.map((m, i) => `
-    <div class="media-item">
-      <span class="media-name">${m.name}</span>
-      ${canEdit ? `<button data-index="${i}">Удалить</button>` : ''}
-    </div>
-  `).join('');
 
-  list.querySelectorAll('button[data-index]').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const idx = +btn.dataset.index;
-      const saved = regionTexts[currentRegion] || {};
-      saved.media = (saved.media || []).filter((_, i) => i !== idx);
-      regionTexts[currentRegion] = saved;
-      renderMedia(saved.media);
+  list.innerHTML = items.map(m => {
+    let preview = '';
+    if (m.type === 'video') {
+      preview = `<video src="${m.url}" controls preload="metadata" style="width:100%;max-height:200px;border-radius:8px;background:#000;"></video>`;
+    } else if (m.type === 'audio') {
+      preview = `<audio src="${m.url}" controls style="width:100%;"></audio>`;
+    } else if (m.type === 'image') {
+      preview = `<img src="${m.url}" style="width:100%;max-height:200px;object-fit:cover;border-radius:8px;">`;
+    } else {
+      preview = `<a href="${m.url}" target="_blank" style="color:#ff8c42;">📄 Открыть файл</a>`;
+    }
+
+    const caption = m.caption
+      ? `<div style="color:#ff8c42;font-weight:600;margin-top:6px;">${m.caption}</div>`
+      : '';
+
+    const filename = `<div style="color:#b89578;font-size:12px;margin-top:4px;">${m.filename}</div>`;
+
+    const delBtn = isAdmin
+      ? `<button data-id="${m.id}" style="margin-top:8px;background:rgba(255,87,87,0.15);color:#ff5757;border:1px solid rgba(255,87,87,0.4);padding:6px 12px;border-radius:8px;cursor:pointer;font-family:inherit;font-size:12px;">Удалить</button>`
+      : '';
+
+    return `
+      <div class="media-item" style="display:flex;flex-direction:column;gap:6px;padding:12px;background:rgba(26,15,8,0.6);border-radius:12px;border:1px solid rgba(232,118,44,0.15);">
+        ${preview}
+        ${caption}
+        ${filename}
+        ${delBtn}
+      </div>
+    `;
+  }).join('');
+
+  // Обработка удаления
+  list.querySelectorAll('button[data-id]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      if (!confirm('Удалить файл?')) return;
+      const id = btn.dataset.id;
+      try {
+        const res = await fetch('/api/upload/' + id, {
+          method: 'DELETE',
+          headers: { 'Authorization': 'Bearer ' + token }
+        });
+        if (!res.ok) throw new Error('Ошибка удаления');
+        loadRegionMedia(currentRegion);
+      } catch (err) { alert(err.message); }
     });
   });
 }
+
+// Загрузка медиа с сервера
+async function loadRegionMedia(region) {
+  const list = document.getElementById('mediaList');
+  list.innerHTML = '<p class="hint">Загрузка...</p>';
+  try {
+    const res = await fetch('/api/upload/' + encodeURIComponent(region));
+    const items = await res.json();
+    renderMedia(items);
+  } catch (err) {
+    list.innerHTML = '<p class="hint">Ошибка загрузки</p>';
+  }
+}
+
+// Клик по кнопкам "Загрузить видео/аудио/картинку/текст"
+document.querySelectorAll('#uploadButtons button').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const fileInput = document.getElementById('fileInput');
+    const type = btn.dataset.type;
+    fileInput.dataset.type = type;
+    fileInput.accept = type === 'video' ? 'video/*'
+                     : type === 'audio' ? 'audio/*'
+                     : type === 'image' ? 'image/*'
+                     : '.txt,.doc,.docx,.pdf,.md';
+    fileInput.click();
+  });
+});
+
+// Когда выбрали файл — показываем поле для подписи
+document.getElementById('fileInput').addEventListener('change', (e) => {
+  if (!e.target.files[0]) return;
+  document.getElementById('uploadCaptionBlock').style.display = 'block';
+  document.getElementById('uploadCaption').value = '';
+});
+
+// Кнопка "Загрузить файл" — отправляет на сервер
+document.getElementById('uploadConfirmBtn').addEventListener('click', async () => {
+  const fileInput = document.getElementById('fileInput');
+  const file = fileInput.files[0];
+  if (!file || !currentRegion) return;
+
+  const type = fileInput.dataset.type;
+  const caption = document.getElementById('uploadCaption').value.trim();
+  const status = document.getElementById('status');
+  const btn = document.getElementById('uploadConfirmBtn');
+
+  btn.disabled = true;
+  btn.textContent = '⏳ Загрузка...';
+  status.textContent = '';
+
+  const form = new FormData();
+  form.append('file', file);
+  form.append('region_name', currentRegion);
+  form.append('type', type);
+  form.append('caption', caption);
+
+  try {
+    const res = await fetch('/api/upload', {
+      method: 'POST',
+      headers: { 'Authorization': 'Bearer ' + token },
+      body: form
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Ошибка загрузки');
+
+    status.textContent = '✅ Загружено';
+    document.getElementById('uploadCaptionBlock').style.display = 'none';
+    fileInput.value = '';
+    loadRegionMedia(currentRegion);
+  } catch (err) {
+    status.textContent = '❌ ' + err.message;
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Загрузить файл';
+    setTimeout(() => { status.textContent = ''; }, 2500);
+  }
+});
+
 
 document.querySelectorAll('#uploadButtons button').forEach(btn => {
   btn.addEventListener('click', () => {
