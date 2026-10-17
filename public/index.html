@@ -824,20 +824,20 @@ function selectRegion(e) {
   document.getElementById('description').textContent = 'Информация о регионе';
   document.getElementById('content').style.display = 'block';
 
- // 1. Сначала очищаем поля, пока данные грузятся
+  // Очищаем поля перед загрузкой
   document.getElementById('history').value  = 'Загрузка...';
   document.getElementById('facts').value    = 'Загрузка...';
   document.getElementById('phrases').value  = 'Загрузка...';
   document.getElementById('dialects').value = 'Загрузка...';
 
-  // 2. Идем на твой сервер и просим данные
+  // Идем на сервер и просим данные
   fetch('/api/regions/' + encodeURIComponent(name))
     .then(res => {
         if (!res.ok) throw new Error('Ошибка сети');
         return res.json();
     })
     .then(data => {
-        // 3. Вставляем то, что пришло с сервера, в окошки
+        // Вставляем данные в окошки
         document.getElementById('history').value  = data.history || '';
         document.getElementById('facts').value    = data.facts || '';
         document.getElementById('phrases').value  = data.phrases || '';
@@ -851,7 +851,7 @@ function selectRegion(e) {
         document.getElementById('dialects').value = '';
     });
 
-  // 4. Настройки прав доступа и кнопок (ЭТО ДОЛЖНО БЫТЬ ВНУТРИ ФУНКЦИИ!)
+  // Настройки прав (кнопки, доступ)
   const canEditRegion = canEdit && !isVisitor;
   ['history', 'facts', 'phrases', 'dialects'].forEach(id => {
     document.getElementById(id).disabled = !canEditRegion;
@@ -862,7 +862,7 @@ function selectRegion(e) {
 
   loadRegionMedia(name);
 
-  // Отметка буквы в квесте
+
   if (currentQuest) checkQuestLetter(name);
 }
 
