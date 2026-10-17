@@ -806,6 +806,7 @@ function resetHighlight(e) {
   layer.setStyle(styleRegion(layer.feature));
 }
 
+
 function selectRegion(e) {
   const layer = e.target;
   if (selectedLayer && selectedLayer !== layer) {
@@ -823,8 +824,7 @@ function selectRegion(e) {
   document.getElementById('description').textContent = 'Информация о регионе';
   document.getElementById('content').style.display = 'block';
 
-  // --- ВОТ ТУТ МЫ МЕНЯЕМ ЛОГИКУ ---
-  // 1. Сначала очищаем поля, пока данные грузятся
+ // 1. Сначала очищаем поля, пока данные грузятся
   document.getElementById('history').value  = 'Загрузка...';
   document.getElementById('facts').value    = 'Загрузка...';
   document.getElementById('phrases').value  = 'Загрузка...';
@@ -845,17 +845,17 @@ function selectRegion(e) {
     })
     .catch(err => {
         console.error("Не удалось загрузить данные:", err);
-        // Если сервер упал, просто оставляем пустые поля
         document.getElementById('history').value  = '';
         document.getElementById('facts').value    = '';
         document.getElementById('phrases').value  = '';
         document.getElementById('dialects').value = '';
     });
-}
-const canEditRegion = canEdit && !isVisitor;
-['history', 'facts', 'phrases', 'dialects'].forEach(id => {
-  document.getElementById(id).disabled = !canEditRegion;
-});
+
+  // 4. Настройки прав доступа и кнопок (ЭТО ДОЛЖНО БЫТЬ ВНУТРИ ФУНКЦИИ!)
+  const canEditRegion = canEdit && !isVisitor;
+  ['history', 'facts', 'phrases', 'dialects'].forEach(id => {
+    document.getElementById(id).disabled = !canEditRegion;
+  });
 
   document.getElementById('uploadButtons').style.display = canEditRegion ? 'flex' : 'none';
   document.getElementById('saveBlock').style.display = canEditRegion ? 'block' : 'none';
