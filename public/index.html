@@ -823,12 +823,35 @@ function selectRegion(e) {
   document.getElementById('description').textContent = 'Информация о регионе';
   document.getElementById('content').style.display = 'block';
 
-  const saved = regionTexts[name] || {};
-document.getElementById('history').value  = saved.history  || '';
-document.getElementById('facts').value    = saved.facts    || '';
-document.getElementById('phrases').value  = saved.phrases  || '';
-document.getElementById('dialects').value = saved.dialects || '';
+  // --- ВОТ ТУТ МЫ МЕНЯЕМ ЛОГИКУ ---
+  // 1. Сначала очищаем поля, пока данные грузятся
+  document.getElementById('history').value  = 'Загрузка...';
+  document.getElementById('facts').value    = 'Загрузка...';
+  document.getElementById('phrases').value  = 'Загрузка...';
+  document.getElementById('dialects').value = 'Загрузка...';
 
+  // 2. Идем на твой сервер и просим данные
+  fetch('/api/regions/' + encodeURIComponent(name))
+    .then(res => {
+        if (!res.ok) throw new Error('Ошибка сети');
+        return res.json();
+    })
+    .then(data => {
+        // 3. Вставляем то, что пришло с сервера, в окошки
+        document.getElementById('history').value  = data.history || '';
+        document.getElementById('facts').value    = data.facts || '';
+        document.getElementById('phrases').value  = data.phrases || '';
+        document.getElementById('dialects').value = data.dialects || '';
+    })
+    .catch(err => {
+        console.error("Не удалось загрузить данные:", err);
+        // Если сервер упал, просто оставляем пустые поля
+        document.getElementById('history').value  = '';
+        document.getElementById('facts').value    = '';
+        document.getElementById('phrases').value  = '';
+        document.getElementById('dialects').value = '';
+    });
+}
 const canEditRegion = canEdit && !isVisitor;
 ['history', 'facts', 'phrases', 'dialects'].forEach(id => {
   document.getElementById(id).disabled = !canEditRegion;
