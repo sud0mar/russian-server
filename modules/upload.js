@@ -1,21 +1,19 @@
 const express = require('express');
 const multer = require('multer');
 const path = require('node:path');
-const { randomUUID } = require('node:crypto');
 const auth = require('./auth');
 
 const router = express.Router();
 const BUCKET = 'media';
-const ALLOWED_TYPES = new Set(['image', 'audio', 'video']);
 
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: {
     fileSize: 20 * 1024 * 1024, // 20 МБ
     files: 1,
-    fields: 2,
-  },
-}).single('file');
+    fields: 2
+  }
+});
 
 router.post('/', auth.authMiddleware(['admin', 'editor']), upload.single('file'), async (req, res) => {
   try {
@@ -27,8 +25,6 @@ router.post('/', auth.authMiddleware(['admin', 'editor']), upload.single('file')
     const bucket = process.env.SUPABASE_BUCKET || 'media';
     const safeName = req.file.originalname.replace(/[^\w.\-]/g, '_');
     
-    // ИСПРАВЛЕНИЕ 1: Переименовали переменную из 'path' в 'filePath', 
-    // чтобы она не перекрывала встроенный модуль Node.js 'path'
     const filePath = `${type}/${Date.now()}_${safeName}`;
 
     const { error: uploadErr } = await auth.supabase.storage
@@ -37,6 +33,7 @@ router.post('/', auth.authMiddleware(['admin', 'editor']), upload.single('file')
         contentType: req.file.mimetype,
         upsert: false
       });
+      
     if (uploadErr) return res.status(500).json({ error: uploadErr.message });
 
     const { data: urlData } = auth.supabase.storage.from(bucket).getPublicUrl(filePath);
@@ -50,6 +47,7 @@ router.post('/', auth.authMiddleware(['admin', 'editor']), upload.single('file')
       caption: caption || '',
       uploaded_by: req.user.username
     });
+    
     if (dbErr) return res.status(500).json({ error: dbErr.message });
 
     res.json({ ok: true, url });
@@ -68,8 +66,6 @@ router.get('/:region', async (req, res) => {
     
   if (error) return res.status(500).json({ error: error.message });
 
-  // ИСПРАВЛЕНИЕ 2: Добавляем поле publicUrl для каждой записи, 
-  // чтобы ваш фронтенд мог легко найти ссылку на картинку
   const formattedData = (data || []).map(item => ({
     ...item,
     publicUrl: item.url 
@@ -78,46 +74,40 @@ router.get('/:region', async (req, res) => {
   res.json(formattedData);
 });
 
-router.delete(
-  '/:id',
-  auth.authMiddleware(['admin']),
-  async (req, res, next) => {
-    try {
-      const { data: media, error: lookupError } = await auth.supabase
-        .from('media')
-        .select('id, url')
-        .eq('id', req.params.id)
-        .maybeSingle();
+router.delete('/:id', auth.authMiddleware(['admin']), async (req, res, next) => {
+  try {
+    const { data: media, error: lookupError } = await auth.supabase
+      .from('media')
+      .select('id, url')
+      .eq('id', req.params.id)
+      .maybeSingle();
 
-      if (lookupError) throw lookupError;
+    if (lookupError) throw lookupError;
 
-      if (!media) {
-        return res.status(404).json({ error: 'Медиа не найдено' });
-      }
-
-      // ИСПРАВЛЕНИЕ 3: Извлекаем путь к файлу из URL для удаления из Storage
-      // (так как в вашей таблице media, судя по всему, нет колонки file_path)
-      const urlParts = media.url.split('/');
-      const filePathForDelete = urlParts.slice(urlParts.indexOf(bucket) + 1).join('/');
-
-      const { error: storageError } = await auth.supabase.storage
-        .from(bucket)
-        .remove([filePathForDelete]);
-
-      if (storageError) throw storageError;
-
-      const { error: deleteError } = await auth.supabase
-        .from('media')
-        .delete()
-        .eq('id', media.id);
-
-      if (deleteError) throw deleteError;
-
-      res.json({ message: 'Медиа удалено' });
-    } catch (error) {
-      next(error);
+    if (!media) {
+      return res.status(404).json({ error: 'Медиа не найдено' });
     }
+
+    const urlParts = media.url.split('/');
+    const filePathForDelete = urlParts.slice(urlParts.indexOf(bucket) + 1).join('/');
+
+    const { error: storageError } = await auth.supabase.storage
+      .from(bucket)
+      .remove([filePathForDelete]);
+
+    if (storageError) throw storageError;
+
+    const { error: deleteError } = await auth.supabase
+      .from('media')
+      .delete()
+      .eq('id', media.id);
+
+    if (deleteError) throw deleteError;
+
+    res.json({ message: 'Медиа удалено' });
+  } catch (error) {
+    next(error);
   }
-);
+});
 
 module.exports = router;
