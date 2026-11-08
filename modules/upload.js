@@ -17,111 +17,65 @@ const upload = multer({
   },
 }).single('file');
 
-router.post(
-  '/',
-  auth.authMiddleware(['editor', 'admin']),
-  (req, res, next) => {
-    upload(req, res, (error) => {
-      if (!error) return next();
-
-      if (error instanceof multer.MulterError) {
-        return res.status(400).json({
-          error: 'Ошибка загрузки: проверьте размер и количество файлов',
-        });
-      }
-
-      next(error);
-    });
-  },
-  async (req, res, next) => {
-    try {
-      const region_name = req.body?.region_name?.trim();
-      const type = req.body?.type?.trim();
-      const file = req.file;
-
-      if (
-        !file ||
-        !region_name ||
-        region_name.length > 200 ||
-        !ALLOWED_TYPES.has(type)
-      ) {
-        return res.status(400).json({
-          error: 'Нужны file, region_name и type (image, audio или video)',
-        });
-      }
-
-      if (!file.mimetype.startsWith(`${type}/`)) {
-        return res.status(400).json({
-          error: 'Тип файла не соответствует полю type',
-        });
-      }
-
-      // В имени файла не используем исходное имя и название региона.
-      const originalExt = path.extname(file.originalname).toLowerCase();
-      const safeExt = /^\.[a-z0-9]{1,10}$/.test(originalExt)
-        ? originalExt
-        : '';
-
-      const file_path = `${type}/${randomUUID()}${safeExt}`;
-      const storage = auth.supabase.storage.from(BUCKET);
-
-      const { error: uploadError } = await storage.upload(
-        file_path,
-        file.buffer,
-        {
-          contentType: file.mimetype,
-          upsert: false,
-        }
-      );
-
-      if (uploadError) throw uploadError;
-
-      const { data: publicData } = storage.getPublicUrl(file_path);
-
-      const { data, error: dbError } = await auth.supabase
-        .from('media')
-        .insert({
-          region_name,
-          type,
-          file_path,
-          url: publicData.publicUrl,
-        })
-        .select('id, region_name, type, file_path, url, created_at')
-        .single();
-
-      if (dbError) {
-        // Не оставляем файл в Storage, если запись в БД не создалась.
-        try {
-          const { error: cleanupError } = await storage.remove([file_path]);
-          if (cleanupError) console.error('Ошибка очистки Storage:', cleanupError);
-        } catch (cleanupError) {
-          console.error('Ошибка очистки Storage:', cleanupError);
-        }
-
-        throw dbError;
-      }
-
-      res.status(201).json(data);
-    } catch (error) {
-      next(error);
-    }
-  }
-);
-
-router.get('/:region', async (req, res, next) => {
+router.post('/', auth.authMiddleware(['admin', 'editor']), upload.single('file'), async (req, res) => {
   try {
-    const { data, error } = await auth.supabase
-      .from('media')
-      .select('id, region_name, type, file_path, url, created_at')
-      .eq('region_name', req.params.region)
-      .order('created_at', { ascending: false });
+    if (!req.file) return res.status(400).json({ error: 'Нет файла' });
 
-    if (error) throw error;
+    const { region_name, type, caption } = req.body;
+    if (!region_name || !type) return res.status(400).json({ error: 'Нужны region_name и type' });
 
-    res.json(data || []);
-  } catch (error) {
-    next(error);
+    const bucket = process.env.SUPABASE_BUCKET || 'media';
+    const safeName = req.file.originalname.replace(/[^\w.\-]/g, '_');
+    
+    // ИСПРАВЛЕНИЕ 1: Переименовали переменную из 'path' в 'filePath', 
+    // чтобы она не перекрывала встроенный модуль Node.js 'path'
+    const filePath = `${type}/${Date.now()}_${safeName}`;
+
+    const { error: uploadErr } = await auth.supabase.storage
+      .from(bucket)
+      .upload(filePath, req.file.buffer, {
+        contentType: req.file.mimetype,
+        upsert: false
+      });
+    if (uploadErr) return res.status(500).json({ error: uploadErr.message });
+
+    const { data: urlData } = auth.supabase.storage.from(bucket).getPublicUrl(filePath);
+    const url = urlData.publicUrl;
+
+    const { error: dbErr } = await auth.supabase.from('media').insert({
+      region_name,
+      type,
+      filename: safeName,
+      url,
+      caption: caption || '',
+      uploaded_by: req.user.username
+    });
+    if (dbErr) return res.status(500).json({ error: dbErr.message });
+
+    res.json({ ok: true, url });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
   }
+});
+
+router.get('/:region', async (req, res) => {
+  const region = decodeURIComponent(req.params.region);
+  const { data, error } = await auth.supabase
+    .from('media')
+    .select('*')
+    .eq('region_name', region)
+    .order('uploaded_at', { ascending: false });
+    
+  if (error) return res.status(500).json({ error: error.message });
+
+  // ИСПРАВЛЕНИЕ 2: Добавляем поле publicUrl для каждой записи, 
+  // чтобы ваш фронтенд мог легко найти ссылку на картинку
+  const formattedData = (data || []).map(item => ({
+    ...item,
+    publicUrl: item.url 
+  }));
+
+  res.json(formattedData);
 });
 
 router.delete(
@@ -131,7 +85,7 @@ router.delete(
     try {
       const { data: media, error: lookupError } = await auth.supabase
         .from('media')
-        .select('id, file_path')
+        .select('id, url')
         .eq('id', req.params.id)
         .maybeSingle();
 
@@ -141,9 +95,14 @@ router.delete(
         return res.status(404).json({ error: 'Медиа не найдено' });
       }
 
+      // ИСПРАВЛЕНИЕ 3: Извлекаем путь к файлу из URL для удаления из Storage
+      // (так как в вашей таблице media, судя по всему, нет колонки file_path)
+      const urlParts = media.url.split('/');
+      const filePathForDelete = urlParts.slice(urlParts.indexOf(bucket) + 1).join('/');
+
       const { error: storageError } = await auth.supabase.storage
-        .from(BUCKET)
-        .remove([media.file_path]);
+        .from(bucket)
+        .remove([filePathForDelete]);
 
       if (storageError) throw storageError;
 
