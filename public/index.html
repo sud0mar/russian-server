@@ -1122,24 +1122,7 @@ document.getElementById('uploadConfirmBtn').addEventListener('click', async () =
 });
 
 
-document.querySelectorAll('#uploadButtons button').forEach(btn => {
-  btn.addEventListener('click', () => {
-    const fileInput = document.getElementById('fileInput');
-    fileInput.dataset.type = btn.dataset.type;
-    fileInput.click();
-  });
-});
 
-document.getElementById('fileInput').addEventListener('change', (e) => {
-  const file = e.target.files[0];
-  if (!file || !currentRegion) return;
-  const saved = regionTexts[currentRegion] || {};
-  saved.media = saved.media || [];
-  saved.media.push({ name: file.name, type: e.target.dataset.type });
-  regionTexts[currentRegion] = saved;
-  renderMedia(saved.media);
-  e.target.value = '';
-});
 
 /* ============================================================
    10. КВЕСТ
