@@ -45,7 +45,8 @@ router.post('/', auth.authMiddleware(['admin', 'editor']), upload.single('file')
       filename: safeName,
       url,
       caption: caption || '',
-      uploaded_by: req.user.username
+      uploaded_by: req.user.username,
+      file_path: filePath // <-- ДОБАВЛЕНА ЭТА СТРОКА
     });
     
     if (dbErr) return res.status(500).json({ error: dbErr.message });
@@ -78,7 +79,7 @@ router.delete('/:id', auth.authMiddleware(['admin']), async (req, res, next) => 
   try {
     const { data: media, error: lookupError } = await auth.supabase
       .from('media')
-      .select('id, url')
+      .select('id, url, file_path')
       .eq('id', req.params.id)
       .maybeSingle();
 
@@ -88,12 +89,15 @@ router.delete('/:id', auth.authMiddleware(['admin']), async (req, res, next) => 
       return res.status(404).json({ error: 'Медиа не найдено' });
     }
 
-    const urlParts = media.url.split('/');
-    const filePathForDelete = urlParts.slice(urlParts.indexOf(bucket) + 1).join('/');
+    // Теперь мы можем использовать file_path напрямую для удаления
+    const pathToDelete = media.file_path || (() => {
+        const urlParts = media.url.split('/');
+        return urlParts.slice(urlParts.indexOf(bucket) + 1).join('/');
+    })();
 
     const { error: storageError } = await auth.supabase.storage
       .from(bucket)
-      .remove([filePathForDelete]);
+      .remove([pathToDelete]);
 
     if (storageError) throw storageError;
 
