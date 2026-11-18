@@ -9,7 +9,7 @@ const BUCKET = 'media';
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: {
-    fileSize: 20 * 1024 * 1024, // 20 МБ
+    fileSize: 50 * 1024 * 1024, // 20 МБ
     files: 1,
     fields: 6
   }
