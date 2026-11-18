@@ -84,23 +84,34 @@ router.delete('/:id', auth.authMiddleware(['admin']), async (req, res, next) => 
       .maybeSingle();
 
     if (lookupError) throw lookupError;
+    if (!media) return res.status(404).json({ error: 'Медиа не найдено' });
 
-    if (!media) {
-      return res.status(404).json({ error: 'Медиа не найдено' });
+    const bucket = process.env.SUPABASE_BUCKET || 'media';
+    let pathToDelete = media.file_path;
+
+    // Если в базе нет file_path, пытаемся вычислить его из URL
+    if (!pathToDelete && media.url) {
+      const urlParts = media.url.split('/');
+      const bucketIndex = urlParts.indexOf(bucket);
+      if (bucketIndex !== -1) {
+        pathToDelete = urlParts.slice(bucketIndex + 1).join('/');
+      }
     }
 
-    // Теперь мы можем использовать file_path напрямую для удаления
-    const pathToDelete = media.file_path || (() => {
-        const urlParts = media.url.split('/');
-        return urlParts.slice(urlParts.indexOf(bucket) + 1).join('/');
-    })();
+    // Пытаемся удалить файл из Storage (если путь найден)
+    if (pathToDelete) {
+      const { error: storageError } = await auth.supabase.storage
+        .from(bucket)
+        .remove([pathToDelete]);
+      
+      // Если файл не удалился в Storage, мы просто выводим ошибку в консоль,
+      // но НЕ останавливаем удаление из базы данных
+      if (storageError) {
+        console.warn('Не удалось удалить файл из Storage:', storageError.message);
+      }
+    }
 
-    const { error: storageError } = await auth.supabase.storage
-      .from(bucket)
-      .remove([pathToDelete]);
-
-    if (storageError) throw storageError;
-
+    // Удаляем запись из базы данных
     const { error: deleteError } = await auth.supabase
       .from('media')
       .delete()
