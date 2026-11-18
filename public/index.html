@@ -484,34 +484,19 @@ body {
     </div>
 
     <div class="section">
-      <h3>🎬 Медиа и файлы</h3>
-      <div class="media-list" id="mediaList">
-        <p class="hint">Пока нет файлов</p>
-      </div>
-      <div class="upload-buttons" id="uploadButtons" style="display:none">
-        <button data-type="video">🎬 Загрузить видео</button>
-        <button data-type="audio">🎵 Загрузить аудио</button>
-        <button data-type="image">🖼️ Загрузить картинку</button>
-        <button data-type="text">📄 Загрузить текст</button>
-      </div>
-       <input type="file" id="fileInput" class="upload-input">
-
-<div id="uploadCaptionBlock" style="display:none; margin-top:12px;">
-  <input type="text" id="uploadCaption" placeholder="Подпись к файлу (необязательно)" style="
-    width: 100%; padding: 12px; border-radius: 10px;
-    background: rgba(26, 15, 8, 0.6); color: #fff5e6;
-    border: 1px solid rgba(232, 118, 44, 0.25);
-    font-family: inherit; font-size: 14px; outline: none;
-    margin-bottom: 8px;
-  ">
-  <button id="uploadConfirmBtn" style="
-    width: 100%; padding: 12px; border-radius: 10px;
-    background: #e8762c; color: #fff; border: none;
-    font-weight: 700; font-size: 14px; cursor: pointer;
-    font-family: inherit;
-  ">Загрузить файл</button>
-     </div>
-    </div>
+  <h3>🎬 Медиа и файлы</h3>
+  <div class="media-list" id="mediaList">
+    <p class="hint">Пока нет файлов</p>
+  </div>
+  
+  <!-- Просто стандартное поле выбора файла, без скрытых элементов -->
+  <input type="file" id="fileInput" style="margin-top: 12px; color: #fff; font-family: inherit;">
+  
+  <div id="uploadCaptionBlock" style="display:none; margin-top:12px;">
+    <input type="text" id="uploadCaption" placeholder="Подпись к файлу (необязательно)" style="width: 100%; padding: 12px; border-radius: 10px; background: rgba(26, 15, 8, 0.6); color: #fff5e6; border: 1px solid rgba(232, 118, 44, 0.25); font-family: inherit; font-size: 14px; outline: none; margin-bottom: 8px;">
+    <button id="uploadConfirmBtn" style="width: 100%; padding: 12px; border-radius: 10px; background: #e8762c; color: #fff; border: none; font-weight: 700; font-size: 14px; cursor: pointer; font-family: inherit;">Загрузить файл</button>
+  </div>
+</div>
 
     <div id="saveBlock" style="display:none; margin-top:16px;">
   <button id="saveBtn" style="
