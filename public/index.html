@@ -984,7 +984,7 @@ document.getElementById('saveBtn').addEventListener('click', async () => {
 });
 
 /* ============================================================
-   9. МЕДИА — правильная загрузка + показ + подписи
+   9. МЕДИА — Упрощенная загрузка
    ============================================================ */
 
 // Показ медиа
@@ -1007,22 +1007,13 @@ function renderMedia(items) {
       preview = `<a href="${m.url}" target="_blank" style="color:#ff8c42;">📄 Открыть файл</a>`;
     }
 
-    const caption = m.caption
-      ? `<div style="color:#ff8c42;font-weight:600;margin-top:6px;">${m.caption}</div>`
-      : '';
-
+    const caption = m.caption ? `<div style="color:#ff8c42;font-weight:600;margin-top:6px;">${m.caption}</div>` : '';
     const filename = `<div style="color:#b89578;font-size:12px;margin-top:4px;">${m.filename}</div>`;
-
-    const delBtn = isAdmin
-      ? `<button data-id="${m.id}" style="margin-top:8px;background:rgba(255,87,87,0.15);color:#ff5757;border:1px solid rgba(255,87,87,0.4);padding:6px 12px;border-radius:8px;cursor:pointer;font-family:inherit;font-size:12px;">Удалить</button>`
-      : '';
+    const delBtn = isAdmin ? `<button data-id="${m.id}" style="margin-top:8px;background:rgba(255,87,87,0.15);color:#ff5757;border:1px solid rgba(255,87,87,0.4);padding:6px 12px;border-radius:8px;cursor:pointer;font-family:inherit;font-size:12px;">Удалить</button>` : '';
 
     return `
       <div class="media-item" style="display:flex;flex-direction:column;gap:6px;padding:12px;background:rgba(26,15,8,0.6);border-radius:12px;border:1px solid rgba(232,118,44,0.15);">
-        ${preview}
-        ${caption}
-        ${filename}
-        ${delBtn}
+        ${preview}${caption}${filename}${delBtn}
       </div>
     `;
   }).join('');
@@ -1057,34 +1048,32 @@ async function loadRegionMedia(region) {
   }
 }
 
-// Клик по кнопкам "Загрузить видео/аудио/картинку/текст"
-document.querySelectorAll('#uploadButtons button').forEach(btn => {
-  btn.addEventListener('click', () => {
-    const fileInput = document.getElementById('fileInput');
-    const type = btn.dataset.type;
-    fileInput.dataset.type = type;
-    fileInput.accept = type === 'video' ? 'video/*'
-                     : type === 'audio' ? 'audio/*'
-                     : type === 'image' ? 'image/*'
-                     : '.txt,.doc,.docx,.pdf,.md';
-    fileInput.click();
-  });
-});
-
 // Когда выбрали файл — показываем поле для подписи
 document.getElementById('fileInput').addEventListener('change', (e) => {
   if (!e.target.files[0]) return;
   document.getElementById('uploadCaptionBlock').style.display = 'block';
   document.getElementById('uploadCaption').value = '';
+  
+  // Автоматически определяем тип файла по его расширению
+  const file = e.target.files[0];
+  const ext = file.name.split('.').pop().toLowerCase();
+  let type = 'text';
+  if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext)) type = 'image';
+  else if (['mp4', 'webm', 'mov'].includes(ext)) type = 'video';
+  else if (['mp3', 'wav', 'ogg'].includes(ext)) type = 'audio';
+  
+  // Сохраняем тип в скрытом поле, чтобы потом отправить на сервер
+  document.getElementById('fileInput').dataset.type = type;
 });
 
 // Кнопка "Загрузить файл" — отправляет на сервер
 document.getElementById('uploadConfirmBtn').addEventListener('click', async () => {
   const fileInput = document.getElementById('fileInput');
   const file = fileInput.files[0];
-  if (!file || !currentRegion) return;
+  if (!file || !currentRegion) return alert('Выберите регион и файл!');
 
-  const type = fileInput.dataset.type;
+  // Если тип не определился, ставим по умолчанию
+  const type = fileInput.dataset.type || 'image'; 
   const caption = document.getElementById('uploadCaption').value.trim();
   const status = document.getElementById('status');
   const btn = document.getElementById('uploadConfirmBtn');
@@ -1120,7 +1109,6 @@ document.getElementById('uploadConfirmBtn').addEventListener('click', async () =
     setTimeout(() => { status.textContent = ''; }, 2500);
   }
 });
-
 
 
 
