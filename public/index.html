@@ -842,7 +842,7 @@ function selectRegion(e) {
     document.getElementById(id).disabled = !canEditRegion;
   });
 
-  document.getElementById('uploadButtons').style.display = canEditRegion ? 'flex' : 'none';
+
   document.getElementById('saveBlock').style.display = canEditRegion ? 'block' : 'none';
 
   loadRegionMedia(name);
