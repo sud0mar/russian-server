@@ -1174,6 +1174,26 @@ document.getElementById('btnRestart').onclick = () => {
   currentQuest = generateRandomQuest();
   renderQuest();
 };
+
+// Автоматическое расширение текстовых полей
+document.addEventListener('DOMContentLoaded', () => {
+  const textareas = document.querySelectorAll('textarea');
+  
+  textareas.forEach(textarea => {
+    // Функция для изменения высоты
+    const autoResize = () => {
+      textarea.style.height = 'auto'; // Сбрасываем высоту
+      textarea.style.height = textarea.scrollHeight + 'px'; // Устанавливаем по содержимому
+    };
+
+    // Вызываем при вводе текста
+    textarea.addEventListener('input', autoResize);
+    
+    // Вызываем при загрузке, если там уже есть текст (например, при выборе региона)
+    autoResize();
+  });
+});
+
 </script>
 </body>
 </html>
