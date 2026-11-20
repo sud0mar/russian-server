@@ -1178,25 +1178,31 @@ document.getElementById('btnRestart').onclick = () => {
   currentQuest = generateRandomQuest();
   renderQuest();
 };
-
-// Автоматическое расширение текстовых полей
-document.addEventListener('DOMContentLoaded', () => {
-  const textareas = document.querySelectorAll('textarea');
-  
-  textareas.forEach(textarea => {
-    // Функция для изменения высоты
-    const autoResize = () => {
-      textarea.style.height = 'auto'; // Сбрасываем высоту
-      textarea.style.height = textarea.scrollHeight + 'px'; // Устанавливаем по содержимому
-    };
-
-    // Вызываем при вводе текста
-    textarea.addEventListener('input', autoResize);
-    
-    // Вызываем при загрузке, если там уже есть текст (например, при выборе региона)
-    autoResize();
+// Универсальная функция растягивания полей
+function resizeAllTextareas() {
+  document.querySelectorAll('.section textarea').forEach(textarea => {
+    textarea.style.height = 'auto'; // Сбрасываем высоту
+    textarea.style.height = textarea.scrollHeight + 'px'; // Растягиваем под текст
   });
+}
+
+// 1. Растягиваем при вводе текста
+document.addEventListener('input', (e) => {
+  if (e.target.tagName.toLowerCase() === 'textarea') {
+    e.target.style.height = 'auto';
+    e.target.style.height = e.target.scrollHeight + 'px';
+  }
 });
+
+// 2. Растягиваем, когда текст загрузился с сервера
+// Мы "перехватываем" функцию selectRegion, чтобы после загрузки данных растянуть поля
+const originalSelectRegion = window.selectRegion;
+window.selectRegion = function(e) {
+  originalSelectRegion(e);
+  // Ждем 100 мс, чтобы текст вставился, и растягиваем
+  setTimeout(resizeAllTextareas, 100);
+  setTimeout(resizeAllTextareas, 500); // На всякий случай еще раз
+};
 
 </script>
 </body>
